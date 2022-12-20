@@ -9,8 +9,9 @@ from ._compat import iteritems
 ENV_VAR_NAMESPACE = 'aws:elasticbeanstalk:application:environment'
 
 
-def get_client(region):
-    return boto3.client('elasticbeanstalk', region_name=region)
+def get_client(aws_region, aws_profile):
+    session = boto3.Session(region_name=aws_region, profile_name=aws_profile)
+    return session.client('elasticbeanstalk')
 
 
 @click.group()
@@ -18,8 +19,8 @@ def cli():
     pass
 
 
-def get_env(app_name, env_name, aws_region):
-    response = get_client(aws_region).describe_configuration_settings(
+def get_env(app_name, env_name, aws_region, aws_profile):
+    response = get_client(aws_region, aws_profile).describe_configuration_settings(
         ApplicationName=app_name,
         EnvironmentName=env_name
     )
@@ -44,8 +45,9 @@ def get_env(app_name, env_name, aws_region):
 @click.argument('env_name')
 @click.option('--target_dir', default='.env')
 @click.option('--aws_region', envvar='AWS_REGION')
-def envdir(app_name, env_name, target_dir, aws_region):
-    env = get_env(app_name, env_name, aws_region)
+@click.option("--aws_profile", envvar="AWS_PROFILE", default="default")
+def envdir(app_name, env_name, target_dir, aws_region, aws_profile):
+    env = get_env(app_name, env_name, aws_region, aws_profile)
     if not click.confirm("found {} vars, will write to '{}/*'".format(len(env), target_dir)):
         click.echo("Exiting..")
         sys.exit(1)
@@ -67,8 +69,9 @@ def envdir(app_name, env_name, target_dir, aws_region):
 @click.argument('app_name')
 @click.argument('env_name')
 @click.option('--aws_region', envvar='AWS_REGION')
-def env(app_name, env_name, aws_region):
-    env = get_env(app_name, env_name, aws_region)
+@click.option("--aws_profile", envvar="AWS_PROFILE", default="default")
+def env(app_name, env_name, aws_region, aws_profile):
+    env = get_env(app_name, env_name, aws_region, aws_profile)
 
     for param in sorted(env.keys()):
         click.echo("{}={}".format(param, env[param]))
@@ -80,13 +83,14 @@ def env(app_name, env_name, aws_region):
 @click.argument('dst_env_name')
 @click.option('--remove', is_flag=True, default=False)
 @click.option('--aws_region', envvar='AWS_REGION')
-def copy(app_name, src_env_name, dst_env_name, remove, aws_region):
-    src_env = get_env(app_name, src_env_name, aws_region)
+@click.option("--aws_profile", envvar="AWS_PROFILE", default="default")
+def copy(app_name, src_env_name, dst_env_name, remove, aws_region, aws_profile):
+    src_env = get_env(app_name, src_env_name, aws_region, aws_profile)
     click.echo("Source environment '{}' has {} options".format(src_env_name, len(src_env)))
     removals = set()
 
     if remove:
-        dst_env = get_env(app_name, dst_env_name, aws_region)
+        dst_env = get_env(app_name, dst_env_name, aws_region, aws_profile)
         for key in dst_env.keys():
             if key not in src_env:
                 removals.add(key)
