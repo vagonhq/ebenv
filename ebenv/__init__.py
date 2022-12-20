@@ -106,7 +106,7 @@ def copy(app_name, src_env_name, dst_env_name, remove, aws_region, aws_profile):
         OptionName=key) for key in removals]
 
     click.echo("Performing environment update...")
-    client = get_client(aws_region)
+    client = get_client(aws_region, aws_profile)
     client.update_environment(
         ApplicationName=app_name,
         EnvironmentName=dst_env_name,
