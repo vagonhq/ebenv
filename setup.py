@@ -36,7 +36,6 @@ def get_requirements():
         return [str(req.req) for req in requirements]
 
 
-
 def read(fname):
     file_path = os.path.join(os.path.dirname(__file__), fname)
     return codecs.open(file_path, encoding='utf-8').read()
